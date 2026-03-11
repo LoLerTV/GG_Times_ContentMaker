@@ -1,0 +1,11 @@
+telethon
+praw
+sqlalchemy[asyncio]
+asyncpg
+pgvector
+pydantic-settings
+openai
+google-generativeai
+apscheduler
+structlog
+python-dotenv
