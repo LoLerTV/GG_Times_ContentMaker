@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "skills": {
+    "telegram-bot": {
+      "source": "OpenClaudia/openclaudia-skills",
+      "sourceType": "github",
+      "computedHash": "69f5c7532baa99efff6f5b9111eabcf26e5483d513d4cada7eee74de5fd1e1e9"
+    }
+  }
+}

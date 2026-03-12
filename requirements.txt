@@ -9,3 +9,5 @@ google-generativeai
 apscheduler
 structlog
 python-dotenv
+aiogram
+
