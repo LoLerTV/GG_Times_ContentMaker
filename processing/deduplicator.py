@@ -20,22 +20,32 @@ class Deduplicator:
         # L1: In-memory hash check
         h = self._get_hash(text)
         if h in self.l1_cache:
+            print(f"Deduplicator: L1 Cache hit (exact text match) for {h}")
             return True
         
         # L2: Vector search in PostgreSQL
         async with AsyncSessionLocal() as session:
-            # Using cosine distance (<=> operator in SQL)
-            stmt = select(RawContent.id).filter(
-                RawContent.embedding.cosine_distance(embedding) < config.DEDUPLICATION_THRESHOLD
-            ).limit(1)
+            # Vector search
+            stmt = select(
+                RawContent.id,
+                RawContent.embedding.cosine_distance(embedding).label("dist")
+            ).order_by("dist").limit(1)
             
             result = await session.execute(stmt)
-            exists = result.scalar_one_or_none() is not None
+            match = result.first()
             
-            if not exists:
-                self.l1_cache.add(h)
-                # Keep cache size manageable
-                if len(self.l1_cache) > 10000:
-                    self.l1_cache.pop()
-                    
-            return exists
+            if match:
+                distance = float(match.dist)
+                is_dupe = distance < config.DEDUPLICATION_THRESHOLD
+                print(f"Deduplicator: Closest match found. Distance: {distance:.4f} (Threshold: {config.DEDUPLICATION_THRESHOLD})")
+                if is_dupe:
+                    print(f"Deduplicator: MATCH! Distance {distance:.4f} < {config.DEDUPLICATION_THRESHOLD}. Blocking as duplicate.")
+                    return True
+            else:
+                print("Deduplicator: Database is empty or no similar messages found.")
+
+        # If we reached here, it's not a duplicate (or didn't meet threshold)
+        self.l1_cache.add(h)
+        if len(self.l1_cache) > 10000:
+            self.l1_cache.pop()
+        return False

@@ -39,7 +39,8 @@ class TelegramIngestor:
                         "has_spoiler": has_spoiler
                     })
 
-        if not combined_text and not media_files:
+        if not combined_text:
+            # We skip posts without text because we can't rewrite or deduplicate them effectively
             return
 
         # Use the ID of the first message as a reference

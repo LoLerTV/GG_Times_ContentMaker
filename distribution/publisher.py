@@ -6,10 +6,15 @@ from config import config
 class TelegramPublisher:
     def __init__(self):
         # aiogram 3.x requires a token, parse_mode can be set on bot or message
+        from aiogram.client.session.aiohttp import AiohttpSession
+        session = AiohttpSession()
         self.bot = Bot(
             token=config.TELEGRAM_BOT_TOKEN, 
-            default=DefaultBotProperties(parse_mode="HTML")
+            default=DefaultBotProperties(parse_mode="HTML"),
+            session=session
         )
+        # Increase default timeout for session
+        self.bot.session.timeout = 60 
         self.channel_id = config.TELEGRAM_CHANNEL_ID
 
     async def publish(self, text: str, media: list = None) -> bool:

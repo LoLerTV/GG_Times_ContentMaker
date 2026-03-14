@@ -34,7 +34,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/content_factory"
 
     # Processing Settings
-    DEDUPLICATION_THRESHOLD: float = 0.15  # Cosine distance
+    DEDUPLICATION_THRESHOLD: float = 0.40  # Cosine distance (even more aggressive to catch rewrites)
     LLM_TIMEOUT: int = 15
 
     @property
