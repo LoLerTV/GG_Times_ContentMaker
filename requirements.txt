@@ -5,7 +5,7 @@ asyncpg
 pgvector
 pydantic-settings
 openai
-google-generativeai
+google-genai
 apscheduler
 structlog
 python-dotenv

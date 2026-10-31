@@ -36,6 +36,13 @@ class Settings(BaseSettings):
     # Processing Settings
     DEDUPLICATION_THRESHOLD: float = 0.40  # Cosine distance (even more aggressive to catch rewrites)
     LLM_TIMEOUT: int = 15
+    OPENAI_MODEL: str = "gpt-4o-mini"
+    GEMINI_MODEL: str = "gemini-flash-latest"
+
+    # Publishing Settings
+    PUBLISH_POLL_INTERVAL: int = 5  # seconds between checks for posts ready to publish
+    PUBLISH_MAX_ATTEMPTS: int = 5
+    PUBLISH_RETRY_BASE: int = 30  # seconds; doubles after every failed attempt, capped at 1 hour
 
     @property
     def get_source_channels(self) -> List[str]:
