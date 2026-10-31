@@ -45,7 +45,10 @@ class Deduplicator:
                 print("Deduplicator: Database is empty or no similar messages found.")
 
         # If we reached here, it's not a duplicate (or didn't meet threshold)
-        self.l1_cache.add(h)
+        return False
+
+    def remember(self, text: str):
+        """Adds text to the in-memory cache. Called only once the post is saved, so failed posts can be retried."""
+        self.l1_cache.add(self._get_hash(text))
         if len(self.l1_cache) > 10000:
             self.l1_cache.pop()
-        return False

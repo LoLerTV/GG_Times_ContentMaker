@@ -2,14 +2,14 @@ import asyncio
 import json
 from typing import Optional
 from openai import AsyncOpenAI
-from google import generativeai as genai
+from google import genai
+from google.genai import types
 from config import config
 
 class LLMRouter:
     def __init__(self):
         self.openai_client = AsyncOpenAI(api_key=config.OPENAI_API_KEY)
-        genai.configure(api_key=config.GEMINI_API_KEY)
-        self.gemini_model = genai.GenerativeModel("gemini-1.5-flash")
+        self.gemini_client = genai.Client(api_key=config.GEMINI_API_KEY)
         
         self.prompt = (
             "Ты — дерзкий редактор русскоязычного Telegram-канала об игровой индустрии. Оцени, является ли текст крутой новостью про игры (НЕ реклама, НЕ сухой патчноут, НЕ унылое размышление).\n"
@@ -21,6 +21,7 @@ class LLMRouter:
             "5. ЦИФРЫ И ФАКТЫ: Всегда оставляй конкретику (даты, деньги, количество скачиваний, терафлопсы).\n"
             "6. HTML И СПОЙЛЕРЫ: Сохраняй теги <tg-spoiler>текст</tg-spoiler>. ВЕСЬ текст должен быть совместим с HTML-разметкой Telegram.\n"
             "7. МУСОР: Никаких ссылок, хештегов или призывов подписаться.\n"
+            "8. ДЛИНА: Не больше 900 символов вместе с пробелами — текст должен влезть в подпись к фото.\n"
             "Примеры идеального форматирования:\n"
             "— «<b>Crimson Desert</b> официально завезёт три режима графики на <b>PS5</b>... 🎮\n\n"
             "Настраивать картинку можно будет под себя: упор на качество или на стабильную частоту кадров.\n\n"
@@ -45,11 +46,11 @@ class LLMRouter:
             return None
 
     async def rewrite(self, text: str) -> Optional[dict]:
-        # Try GPT-4o-mini
+        # Try OpenAI (gpt-4o-mini by default)
         try:
             response = await asyncio.wait_for(
                 self.openai_client.chat.completions.create(
-                    model="gpt-4o-mini",
+                    model=config.OPENAI_MODEL,
                     response_format={"type": "json_object"},
                     messages=[
                         {"role": "system", "content": self.prompt},
@@ -66,15 +67,20 @@ class LLMRouter:
         except Exception as e:
             print(f"OpenAI error or timeout: {e}. Falling back to Gemini...")
             
-        # Fallback to Gemini 1.5 Flash
+        # Fallback to Gemini
         try:
-            response = await self.gemini_model.generate_content_async(
-                f"{self.prompt}\n\nНовость:\n{text}",
-                generation_config=genai.types.GenerationConfig(
-                    response_mime_type="application/json",
+            response = await asyncio.wait_for(
+                self.gemini_client.aio.models.generate_content(
+                    model=config.GEMINI_MODEL,
+                    contents=f"Новость:\n{text}",
+                    config=types.GenerateContentConfig(
+                        system_instruction=self.prompt,
+                        response_mime_type="application/json",
+                    ),
                 ),
+                timeout=config.LLM_TIMEOUT
             )
-            return self._parse_json_response(response.text)
+            return self._parse_json_response(response.text or "")
         except Exception as e:
             print(f"Gemini error: {e}")
             return None

@@ -7,7 +7,7 @@ services:
       - .env
     environment:
       # This overrides the local localhost URL you might have in .env, pointing to our dockerized db container
-      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/content_factory
+      - DATABASE_URL=postgresql+asyncpg://postgres:${POSTGRES_PASSWORD:-postgres}@db:5432/content_factory
     depends_on:
       db:
         condition: service_healthy
@@ -17,12 +17,13 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_DB: content_factory
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      # Only reachable from this machine; the app talks to the db over the compose network
+      - "127.0.0.1:5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d content_factory"]
       interval: 5s

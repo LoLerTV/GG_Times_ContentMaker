@@ -9,6 +9,18 @@ async def init_db():
         await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
         # Create all tables
         await conn.run_sync(Base.metadata.create_all)
+        # create_all does not touch existing tables, so add columns introduced later by hand
+        for ddl in (
+            "ALTER TABLE processed_content ADD COLUMN IF NOT EXISTS attempts INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE processed_content ADD COLUMN IF NOT EXISTS next_attempt_at TIMESTAMP",
+            "ALTER TABLE processed_content ADD COLUMN IF NOT EXISTS last_error TEXT",
+            "ALTER TABLE processed_content ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT now()",
+            "ALTER TABLE processed_content ADD COLUMN IF NOT EXISTS published_at TIMESTAMP",
+            "CREATE INDEX IF NOT EXISTS ix_processed_content_status ON processed_content (status)",
+            # Rows from the old version were published inline and never got a status update
+            "UPDATE processed_content SET status = 'legacy' WHERE status = 'pending'",
+        ):
+            await conn.execute(text(ddl))
     
     # Add an empty source with id=1 if it doesn't exist
     async with AsyncSessionLocal() as session:

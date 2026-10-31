@@ -37,6 +37,12 @@ class ProcessedContent(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     parent_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("raw_content.id"))
     final_text: Mapped[str] = mapped_column(Text)
-    status: Mapped[str] = mapped_column(String(20), default="pending")  # pending, published, rejected
+    # ready -> published | failed (after PUBLISH_MAX_ATTEMPTS); rejected = filtered out by the LLM
+    status: Mapped[str] = mapped_column(String(20), default="ready", index=True)
     scheduled_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    attempts: Mapped[int] = mapped_column(default=0, server_default="0")
+    next_attempt_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    last_error: Mapped[str] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    published_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
     content: Mapped["RawContent"] = relationship()
